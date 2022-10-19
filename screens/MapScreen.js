@@ -4,12 +4,42 @@ import { GooglePlacesAutocomplete } from 'react-native-google-places-autocomplet
 import { GOOGLE_MAPS_APIKEY } from '@env'
 import MapView, { Marker } from 'react-native-maps'
 import MapViewDirections from 'react-native-maps-directions'
+import * as TaskManager from "expo-task-manager"
+import * as Location from "expo-location"
+
+const LOCATION_TASK_NAME = "LOCATION_TASK_NAME"
+let foregroundSubscription = null
+
+// Define the background task for location tracking
+TaskManager.defineTask(LOCATION_TASK_NAME, async ({ data, error }) => {
+  if (error) {
+    console.error(error)
+    return
+  }
+  if (data) {
+    // Extract location coordinates from data
+    const { locations } = data
+    const location = locations[0]
+    if (location) {
+      console.log("Location in background", location.coords)
+    }
+  }
+})
 
 const MapScreen = () => {
 
     const [origin, setOrigin] = useState(null)
     const [destination, setDestination] = useState(null)
     const mapRef = useRef(null)
+
+    // Request permissions right after starting the app
+  useEffect(() => {
+    const requestPermissions = async () => {
+      const foreground = await Location.requestForegroundPermissionsAsync()
+      if (foreground.granted) await Location.requestBackgroundPermissionsAsync()
+    }
+    requestPermissions()
+  }, [])
 
     useEffect(() => {
         if(!origin || !destination) return;
@@ -19,6 +49,34 @@ const MapScreen = () => {
         });
     }, [origin, destination])
 
+
+     // Start location tracking in foreground
+  const startForegroundUpdate = async () => {
+    // Check if foreground permission is granted
+    const { granted } = await Location.getForegroundPermissionsAsync()
+    if (!granted) {
+      console.log("location tracking denied")
+      return
+    }
+
+    // Make sure that foreground location tracking is not running
+    foregroundSubscription?.remove()
+
+    // Start watching position in real-time
+    foregroundSubscription = await Location.watchPositionAsync(
+      {
+        // For better logs, we set the accuracy to the most sensitive option
+        accuracy: Location.Accuracy.BestForNavigation,
+      },
+      location => {
+        setOrigin(location.coords)
+        console.log(origin)
+      }
+    )
+  }
+
+  startForegroundUpdate()
+
   return (
     <View>
         {origin &&
@@ -27,8 +85,8 @@ const MapScreen = () => {
                 style={styles.map}
                 mapType="mutedStandard"
                 initialRegion={{
-                    latitude: origin.location.lat,
-                    longitude: origin.location.lng,
+                    latitude: origin.latitude,
+                    longitude: origin.longitude,
                     latitudeDelta: 0.005,
                     longitudeDelta: 0.005
                 }}
@@ -36,7 +94,7 @@ const MapScreen = () => {
 
                 {origin && destination &&
                     <MapViewDirections
-                        origin={origin.description}
+                        origin={[origin.latitude, origin.longitude]}
                         destination={destination.description}
                         apikey={GOOGLE_MAPS_APIKEY}
                         strokeWidth={3}
@@ -45,11 +103,11 @@ const MapScreen = () => {
                     />
                 }<Marker
                         coordinate={{
-                            latitude: origin.location.lat,
-                            longitude: origin.location.lng,
+                            latitude: origin.latitude,
+                            longitude: origin.longitude,
                         }}
                         title="Origin"
-                        description={origin.description}
+                        // description={origin.description}
                         idenifier="origin"
                     />
                 
@@ -70,7 +128,7 @@ const MapScreen = () => {
         
 
         <View style={styles.searchContainer}>
-           <GooglePlacesAutocomplete
+           {/* <GooglePlacesAutocomplete
                 style={{textInput: styles.input}}
                 enablePoweredByContainer={false}
                 minLength={2}
@@ -90,7 +148,7 @@ const MapScreen = () => {
                         description: data.description
                     })
                 }}
-            />  
+            />   */}
             <GooglePlacesAutocomplete
                 style={{textInput: styles.input}}
                 enablePoweredByContainer={false}
