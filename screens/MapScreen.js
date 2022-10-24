@@ -1,11 +1,13 @@
 import { View, Text, SafeAreaView, StyleSheet } from 'react-native'
 import React, { useEffect, useRef, useState } from 'react'
 import { GooglePlacesAutocomplete } from 'react-native-google-places-autocomplete'
-import { GOOGLE_MAPS_APIKEY } from '@env'
+import { GOOGLE_MAPS_APIKEY, TRAVEL_TIME_APPID, TRAVEL_TIME_APIKEY } from '@env'
 import MapView, { Marker } from 'react-native-maps'
 import MapViewDirections from 'react-native-maps-directions'
 import * as TaskManager from "expo-task-manager"
 import * as Location from "expo-location"
+import { getDistance } from 'geolib'
+
 
 const LOCATION_TASK_NAME = "LOCATION_TASK_NAME"
 let foregroundSubscription = null
@@ -30,6 +32,7 @@ const MapScreen = () => {
 
     const [origin, setOrigin] = useState(null)
     const [destination, setDestination] = useState(null)
+    const [distance, setDistance] = useState(null)
     const mapRef = useRef(null)
 
     // Request permissions right after starting the app
@@ -48,6 +51,30 @@ const MapScreen = () => {
             edgePadding: {top: 50, right: 50, bottom: 50, left: 50},
         });
     }, [origin, destination])
+
+    useEffect(() => {
+      if(!origin || !destination) return;
+      
+      // const getTravelDistance = async() => {
+        // fetch(`https://maps.googleapis.com/maps/api/distancematrix/json?units=imperial&origins=${origin}&destinations=${destination}&key=${GOOGLE_MAPS_APIKEY}`)
+        // OR
+        // fetch(`https://api.traveltimeapp.com/v4/time-filter?type=walking&departure_time=2022-10-19T07:00:00Z&search_lat=${origin.latitude}&search_lng=${origin.longitude}&locations=${destination.location.lat}_${destination.location.lng}&app_id=${TRAVEL_TIME_APPID}&api_key=${TRAVEL_TIME_APIKEY}`)
+        // .then((res) => res.json())
+        // .then(data => {
+        //   console.log(data)
+        // })
+      // }
+      
+      // getTravelDistance()
+      
+      setDistance(
+        getDistance(
+          { latitude: origin.latitude, longitude: origin.longitude },
+          { latitude: destination.location.lat, longitude: destination.location.lng }
+        )
+      )
+
+    }, [origin, destination, /* GOOGLE_MAPS_APIKEY */])
 
 
      // Start location tracking in foreground
@@ -81,15 +108,16 @@ const MapScreen = () => {
     <View>
         {origin &&
             <MapView 
-                ref={mapRef}
-                style={styles.map}
-                mapType="mutedStandard"
-                initialRegion={{
-                    latitude: origin.latitude,
-                    longitude: origin.longitude,
-                    latitudeDelta: 0.005,
-                    longitudeDelta: 0.005
-                }}
+              showsUserLocation={true}
+              ref={mapRef}
+              style={styles.map}
+              mapType="mutedStandard"
+              initialRegion={{
+                  latitude: origin.latitude,
+                  longitude: origin.longitude,
+                  latitudeDelta: 0.005,
+                  longitudeDelta: 0.005
+              }}
             >
 
                 {origin && destination &&
@@ -109,6 +137,7 @@ const MapScreen = () => {
                         title="Origin"
                         // description={origin.description}
                         idenifier="origin"
+                        opacity={0}
                     />
                 
 
@@ -170,6 +199,9 @@ const MapScreen = () => {
                     })
                 }}
             />
+            <View>
+              <Text style={styles.distance}>{distance} meters</Text>
+            </View>
         </View>
             
     </View>
@@ -199,7 +231,20 @@ const styles = StyleSheet.create({
     map: {
         width: '100%',
         height: '100%'
-    }
+    },
+    distance: {
+      position: 'absolute',
+      backgroundColor: "white",
+      shadowColor: "black",
+      shadowOffset: {width: 2, height: 2},
+      shadowOpacity: 0.5,
+      shadowRadius: 4,
+      elevation: 4,
+      padding: 8,
+      borderRadius: 8,
+      marginTop: 20,
+      zIndex: 10
+    },
   });
 
 export default MapScreen
