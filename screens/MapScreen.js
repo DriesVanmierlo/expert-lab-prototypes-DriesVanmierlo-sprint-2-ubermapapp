@@ -7,6 +7,8 @@ import MapViewDirections from 'react-native-maps-directions'
 import * as TaskManager from "expo-task-manager"
 import * as Location from "expo-location"
 import { getDistance } from 'geolib'
+import { db } from './../database/config'
+import { ref, set, update, onValue, remove } from "firebase/database"
 
 // GET USER LOCATION
 const LOCATION_TASK_NAME = "LOCATION_TASK_NAME"
@@ -29,6 +31,7 @@ TaskManager.defineTask(LOCATION_TASK_NAME, async ({ data, error }) => {
 })
 
 const MapScreen = () => {
+    const ROOMNAME = 'a637528'
 
     const [origin, setOrigin] = useState(null)
     const [destination, setDestination] = useState(null)
@@ -40,13 +43,17 @@ const MapScreen = () => {
     }
 
     useEffect(() => {
-      console.log(sender)
-
       if(sender){
-        
+        update(ref(db, 'location/' + ROOMNAME), {
+          room: ROOMNAME,
+          latitude: origin.latitude,
+          longitude:origin.longitude
+        }).catch((error) => {
+          alert(error);
+        });
       }
 
-    }, [sender])
+    }, [sender, origin])
 
     const mapRef = useRef(null)
 
@@ -120,7 +127,7 @@ const MapScreen = () => {
 
   return (
     <View>
-        {origin &&
+        {origin?
             <MapView 
               showsUserLocation={true}
               ref={mapRef}
@@ -168,7 +175,7 @@ const MapScreen = () => {
                         idenifier="destination"
                     />
                 }  
-            </MapView>
+            </MapView> : <Text>TESTEST</Text>
         }
         
 
