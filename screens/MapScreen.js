@@ -1,4 +1,4 @@
-import { View, Text, SafeAreaView, StyleSheet } from 'react-native'
+import { View, Text, SafeAreaView, StyleSheet, Switch } from 'react-native'
 import React, { useEffect, useRef, useState } from 'react'
 import { GooglePlacesAutocomplete } from 'react-native-google-places-autocomplete'
 import { GOOGLE_MAPS_APIKEY, TRAVEL_TIME_APPID, TRAVEL_TIME_APIKEY } from '@env'
@@ -8,7 +8,7 @@ import * as TaskManager from "expo-task-manager"
 import * as Location from "expo-location"
 import { getDistance } from 'geolib'
 
-
+// GET USER LOCATION
 const LOCATION_TASK_NAME = "LOCATION_TASK_NAME"
 let foregroundSubscription = null
 
@@ -33,6 +33,21 @@ const MapScreen = () => {
     const [origin, setOrigin] = useState(null)
     const [destination, setDestination] = useState(null)
     const [distance, setDistance] = useState(null)
+
+    const [sender, setSender] = useState(false)
+    const toggleSwitch = () => { 
+      setSender(previousState => !previousState)
+    }
+
+    useEffect(() => {
+      console.log(sender)
+
+      if(sender){
+        
+      }
+
+    }, [sender])
+
     const mapRef = useRef(null)
 
     // Request permissions right after starting the app
@@ -97,7 +112,6 @@ const MapScreen = () => {
       },
       location => {
         setOrigin(location.coords)
-        console.log(origin)
       }
     )
   }
@@ -120,25 +134,27 @@ const MapScreen = () => {
               }}
             >
 
-                {origin && destination &&
-                    <MapViewDirections
-                        origin={[origin.latitude, origin.longitude]}
-                        destination={destination.description}
-                        apikey={GOOGLE_MAPS_APIKEY}
-                        strokeWidth={3}
-                        strokeColor='blue'
-                        mode='WALKING'
-                    />
-                }<Marker
-                        coordinate={{
-                            latitude: origin.latitude,
-                            longitude: origin.longitude,
-                        }}
-                        title="Origin"
-                        // description={origin.description}
-                        idenifier="origin"
-                        opacity={0}
-                    />
+                {/* {origin && destination &&
+                  <MapViewDirections
+                    origin={[origin.latitude, origin.longitude]}
+                    destination={destination.description}
+                    apikey={GOOGLE_MAPS_APIKEY}
+                    strokeWidth={3}
+                    strokeColor='blue'
+                    mode='WALKING'
+                  />
+                } */}
+
+                <Marker
+                  coordinate={{
+                    latitude: origin.latitude,
+                    longitude: origin.longitude,
+                  }}
+                  title="Origin"
+                  // description={origin.description}
+                  idenifier="origin"
+                  opacity={0}
+                />
                 
 
                 {destination?.location &&
@@ -178,7 +194,7 @@ const MapScreen = () => {
                     })
                 }}
             />   */}
-            <GooglePlacesAutocomplete
+            {/* <GooglePlacesAutocomplete
                 style={{textInput: styles.input}}
                 enablePoweredByContainer={false}
                 minLength={2}
@@ -198,9 +214,21 @@ const MapScreen = () => {
                         description: data.description
                     })
                 }}
-            />
-            <View>
+            /> */}
+            <View style={styles.controls}>
               <Text style={styles.distance}>{distance} meters</Text>
+              <View style={styles.switchContainer}>
+                <Text>Send location:</Text>
+                <Switch
+                  trackColor={{ false: "#767577", true: "#81b0ff" }}
+                  thumbColor={sender ? "#0000ff" : "#f4f3f4"}
+                  ios_backgroundColor="#3e3e3e"
+                  onValueChange={toggleSwitch}
+                  value={sender}
+                  style={styles.switch}
+                />
+              </View>
+              
             </View>
         </View>
             
@@ -233,18 +261,19 @@ const styles = StyleSheet.create({
         height: '100%'
     },
     distance: {
-      position: 'absolute',
-      backgroundColor: "white",
-      shadowColor: "black",
-      shadowOffset: {width: 2, height: 2},
-      shadowOpacity: 0.5,
-      shadowRadius: 4,
-      elevation: 4,
       padding: 8,
-      borderRadius: 8,
-      marginTop: 20,
-      zIndex: 10
+      width: '30%'
     },
+    controls: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center'
+    },
+    switchContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      direction: 'rtl'
+    }
   });
 
 export default MapScreen
