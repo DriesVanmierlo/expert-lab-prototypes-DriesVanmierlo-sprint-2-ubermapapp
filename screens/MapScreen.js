@@ -1,4 +1,4 @@
-import { View, Text, SafeAreaView, StyleSheet, Switch } from 'react-native'
+import { View, Text, SafeAreaView, StyleSheet, Switch, TouchableOpacity } from 'react-native'
 import React, { useEffect, useRef, useState } from 'react'
 import { GooglePlacesAutocomplete } from 'react-native-google-places-autocomplete'
 import { GOOGLE_MAPS_APIKEY, TRAVEL_TIME_APPID, TRAVEL_TIME_APIKEY } from '@env'
@@ -9,6 +9,7 @@ import * as Location from "expo-location"
 import { getDistance } from 'geolib'
 import { db } from './../database/config'
 import { ref, set, update, onValue, remove } from "firebase/database"
+import * as Progress from 'react-native-progress'
 
 // GET USER LOCATION
 const LOCATION_TASK_NAME = "LOCATION_TASK_NAME"
@@ -55,6 +56,14 @@ const MapScreen = () => {
 
     }, [sender, origin])
 
+    function checkDestination (){
+      const starCountRef = ref(db, 'location/' + ROOMNAME);
+      onValue(starCountRef, (snapshot) => {
+      const data = snapshot.val();
+      setDestination(data)
+    });
+    }
+
     const mapRef = useRef(null)
 
     // Request permissions right after starting the app
@@ -76,23 +85,10 @@ const MapScreen = () => {
 
     useEffect(() => {
       if(!origin || !destination) return;
-      
-      // const getTravelDistance = async() => {
-        // fetch(`https://maps.googleapis.com/maps/api/distancematrix/json?units=imperial&origins=${origin}&destinations=${destination}&key=${GOOGLE_MAPS_APIKEY}`)
-        // OR
-        // fetch(`https://api.traveltimeapp.com/v4/time-filter?type=walking&departure_time=2022-10-19T07:00:00Z&search_lat=${origin.latitude}&search_lng=${origin.longitude}&locations=${destination.location.lat}_${destination.location.lng}&app_id=${TRAVEL_TIME_APPID}&api_key=${TRAVEL_TIME_APIKEY}`)
-        // .then((res) => res.json())
-        // .then(data => {
-        //   console.log(data)
-        // })
-      // }
-      
-      // getTravelDistance()
-      
       setDistance(
         getDistance(
           { latitude: origin.latitude, longitude: origin.longitude },
-          { latitude: destination.location.lat, longitude: destination.location.lng }
+          { latitude: destination.latitude, longitude: destination.longitude }
         )
       )
 
@@ -144,7 +140,7 @@ const MapScreen = () => {
                 {/* {origin && destination &&
                   <MapViewDirections
                     origin={[origin.latitude, origin.longitude]}
-                    destination={destination.description}
+                    destination={[destination.latitude, destination.longitude]}
                     apikey={GOOGLE_MAPS_APIKEY}
                     strokeWidth={3}
                     strokeColor='blue'
@@ -164,64 +160,22 @@ const MapScreen = () => {
                 />
                 
 
-                {destination?.location &&
+                {destination &&
                     <Marker
                         coordinate={{
-                            latitude: destination.location.lat,
-                            longitude: destination.location.lng,
+                            latitude: destination.latitude,
+                            longitude: destination.longitude,
                         }}
                         title="Destination"
-                        description={destination.description}
+                        // description={destination}
                         idenifier="destination"
                     />
                 }  
-            </MapView> : <Text>TESTEST</Text>
+            </MapView> : <View style={styles.loading}><Progress.Bar size={30} color='#f4f3f4' indeterminate={true} /></View> 
         }
         
 
         <View style={styles.searchContainer}>
-           {/* <GooglePlacesAutocomplete
-                style={{textInput: styles.input}}
-                enablePoweredByContainer={false}
-                minLength={2}
-                query={{
-                    key: GOOGLE_MAPS_APIKEY,
-                    language: 'en'
-                }}
-                fetchDetails={true}
-                returnKeyType={"search"}
-                placeholder='Where from?'
-                nearbyPlacesAPI='GooglePlacesSearch'
-                debounce={400}
-
-                onPress={(data, details = null) => {
-                    setOrigin({
-                        location: details.geometry.location,
-                        description: data.description
-                    })
-                }}
-            />   */}
-            {/* <GooglePlacesAutocomplete
-                style={{textInput: styles.input}}
-                enablePoweredByContainer={false}
-                minLength={2}
-                query={{
-                    key: GOOGLE_MAPS_APIKEY,
-                    language: 'en'
-                }}
-                fetchDetails={true}
-                returnKeyType={"search"}
-                placeholder='Where to?'
-                nearbyPlacesAPI='GooglePlacesSearch'
-                debounce={400}
-
-                onPress={(data, details = null) => {
-                    setDestination({
-                        location: details.geometry.location,
-                        description: data.description
-                    })
-                }}
-            /> */}
             <View style={styles.controls}>
               <Text style={styles.distance}>{distance} meters</Text>
               <View style={styles.switchContainer}>
@@ -238,6 +192,7 @@ const MapScreen = () => {
               
             </View>
         </View>
+          <TouchableOpacity onPress={checkDestination} style={styles.refresh}><Text>Refresh destination</Text></TouchableOpacity>
             
     </View>
   )
@@ -280,6 +235,24 @@ const styles = StyleSheet.create({
       flexDirection: 'row',
       alignItems: 'center',
       direction: 'rtl'
+    },
+    loading: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center'
+    },
+    refresh: {
+      position: 'absolute',
+      bottom: 20,
+      right: 20,
+      backgroundColor: 'white',
+      padding: 10,
+      borderRadius: 10,
+      shadowColor: "black",
+        shadowOffset: {width: 2, height: 2},
+        shadowOpacity: 0.5,
+        shadowRadius: 4,
+        elevation: 4,
     }
   });
 
