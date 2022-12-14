@@ -44,24 +44,42 @@ const MapScreen = () => {
     }
 
     useEffect(() => {
-      if(sender){
-        update(ref(db, 'location/' + ROOMNAME), {
-          room: ROOMNAME,
-          latitude: origin.latitude,
-          longitude:origin.longitude
-        }).catch((error) => {
-          alert(error);
-        });
-      }
+      const timer = setInterval(
+        () => checkDestination(),
+        5000
+      );
+      return () => clearInterval(timer)
+    }, [])
 
+    useEffect(() => {
+      const timer = setInterval(
+        () => {
+          if(sender){
+            console.log("Update sender")
+            update(ref(db, 'location/' + ROOMNAME), {
+              room: ROOMNAME,
+              latitude: origin.latitude,
+              longitude:origin.longitude
+            }).catch((error) => {
+              alert(error);
+            });
+          }
+        },
+        5000
+      )
+      return() => clearInterval(timer)
     }, [sender, origin])
 
-    function checkDestination (){
-      const starCountRef = ref(db, 'location/' + ROOMNAME);
-      onValue(starCountRef, (snapshot) => {
-      const data = snapshot.val();
-      setDestination(data)
-    });
+    const checkDestination = () => {
+      console.log("checkDestination")
+      if (sender === false){
+        const starCountRef = ref(db, 'location/' + ROOMNAME);
+        onValue(starCountRef, (snapshot) => {
+          const data = snapshot.val();
+          setDestination(data)
+          console.log("setDestination")
+        });
+      }
     }
 
     const mapRef = useRef(null)
@@ -75,23 +93,23 @@ const MapScreen = () => {
     requestPermissions()
   }, [])
 
+    // useEffect(() => {
+    //     if(!origin || !destination) return;
+
+    //     mapRef.current.fitToSuppliedMarkers(["origin", "destination"], {
+    //         edgePadding: {top: 50, right: 50, bottom: 50, left: 50},
+    //     });
+    // }, [origin, destination])
+
     useEffect(() => {
-        if(!origin || !destination) return;
-
-        mapRef.current.fitToSuppliedMarkers(["origin", "destination"], {
-            edgePadding: {top: 50, right: 50, bottom: 50, left: 50},
-        });
-    }, [origin, destination])
-
-    useEffect(() => {
-      if(!origin || !destination) return;
-      setDistance(
-        getDistance(
-          { latitude: origin.latitude, longitude: origin.longitude },
-          { latitude: destination.latitude, longitude: destination.longitude }
-        )
-      )
-
+          if(!origin || !destination) return;
+          console.log("set distance")
+          setDistance(
+            getDistance(
+              { latitude: origin.latitude, longitude: origin.longitude },
+              { latitude: destination.latitude, longitude: destination.longitude }
+            )
+          )
     }, [origin, destination, /* GOOGLE_MAPS_APIKEY */])
 
 
@@ -114,12 +132,22 @@ const MapScreen = () => {
         accuracy: Location.Accuracy.BestForNavigation,
       },
       location => {
+        console.log("set origin")
         setOrigin(location.coords)
       }
     )
   }
 
-  startForegroundUpdate()
+  useEffect(() => {
+    const timer = setInterval(
+      () => {
+        console.log('startForegroundUpdate')
+        startForegroundUpdate()
+      },
+      5000
+      )
+    return () => clearInterval(timer)
+  }, [])
 
   return (
     <View>
@@ -192,7 +220,7 @@ const MapScreen = () => {
               
             </View>
         </View>
-          <TouchableOpacity onPress={checkDestination} style={styles.refresh}><Text>Refresh destination</Text></TouchableOpacity>
+          {/* <TouchableOpacity onPress={checkDestination} style={styles.refresh}><Text>Refresh destination</Text></TouchableOpacity> */}
             
     </View>
   )
@@ -244,7 +272,7 @@ const styles = StyleSheet.create({
     refresh: {
       position: 'absolute',
       bottom: 20,
-      right: 20,
+      left: 20,
       backgroundColor: 'white',
       padding: 10,
       borderRadius: 10,
