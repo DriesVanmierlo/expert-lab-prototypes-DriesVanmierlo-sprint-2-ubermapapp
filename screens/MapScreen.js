@@ -52,8 +52,6 @@ const MapScreen = () => {
     }, [])
 
     useEffect(() => {
-      const timer = setInterval(
-        () => {
           if(sender){
             console.log("Update sender")
             update(ref(db, 'location/' + ROOMNAME), {
@@ -64,15 +62,11 @@ const MapScreen = () => {
               alert(error);
             });
           }
-        },
-        5000
-      )
-      return() => clearInterval(timer)
     }, [sender, origin])
 
     const checkDestination = () => {
       console.log("checkDestination")
-      if (sender === false){
+      if (!sender){
         const starCountRef = ref(db, 'location/' + ROOMNAME);
         onValue(starCountRef, (snapshot) => {
           const data = snapshot.val();
